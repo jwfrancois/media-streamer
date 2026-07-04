@@ -5,13 +5,23 @@ const cors = require('cors');
 const { execSync } = require('child_process');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Configurable library paths - user to edit
+// Serve index for root and fallback
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/stream')) return next();
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Configurable library paths
 const LIBRARY_PATHS = {
   movies: '/path/to/movies',
   tv: '/path/to/tv',
@@ -20,7 +30,7 @@ const LIBRARY_PATHS = {
   audiobooks: '/path/to/audiobooks'
 };
 
-// Scan directory for media files
+// ... (rest of scanner functions same as before)
 function scanDirectory(dir, type) {
   const files = [];
   function walk(dir) {
@@ -49,8 +59,8 @@ function scanDirectory(dir, type) {
 
 function isMediaFile(filename, type) {
   const ext = path.extname(filename).toLowerCase();
-  if (type === 'movies' || type === 'tv') return ['.mp4', '.mkv', '.avi'].includes(ext);
-  if (type === 'music' || type === 'podcasts' || type === 'audiobooks') return ['.mp3', '.m4a', '.flac', '.wav'].includes(ext);
+  if (type === 'movies' || type === 'tv') return ['.mp4', '.mkv', '.avi', '.mov'].includes(ext);
+  if (type === 'music' || type === 'podcasts' || type === 'audiobooks') return ['.mp3', '.m4a', '.flac', '.wav', '.aac'].includes(ext);
   return false;
 }
 
@@ -67,7 +77,6 @@ function getMetadata(filePath, type) {
   }
 }
 
-// API Endpoints
 app.get('/api/libraries', (req, res) => {
   const libraries = {};
   for (const [key, dir] of Object.entries(LIBRARY_PATHS)) {
@@ -81,11 +90,10 @@ app.get('/api/libraries', (req, res) => {
 app.get('/stream', (req, res) => {
   const file = req.query.file;
   if (!file || !fs.existsSync(file)) return res.status(404).send('Not found');
-  
   const stat = fs.statSync(file);
   const fileSize = stat.size;
   const range = req.headers.range;
-  
+  const contentType = path.extname(file).toLowerCase() === '.mp4' ? 'video/mp4' : 'audio/mpeg';
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
@@ -96,19 +104,18 @@ app.get('/stream', (req, res) => {
       'Content-Range': `bytes ${start}-${end}/${fileSize}`,
       'Accept-Ranges': 'bytes',
       'Content-Length': chunksize,
-      'Content-Type': 'video/mp4'
+      'Content-Type': contentType
     });
     fileStream.pipe(res);
   } else {
     res.writeHead(200, {
       'Content-Length': fileSize,
-      'Content-Type': 'video/mp4'
+      'Content-Type': contentType
     });
     fs.createReadStream(file).pipe(res);
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Media Streamer running on http://localhost:${PORT}`);
-  console.log('Update LIBRARY_PATHS in server.js with your media directories.');
+  console.log(`✅ Media Streamer running on http://localhost:${PORT}`);
 });
