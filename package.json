@@ -1,1 +1,19 @@
-{"name":"media-streamer","version":"1.0.0","description":"Personal local media streaming app - Netflix/Spotify/Audible/Plex clone","main":"server.js","scripts":{"start":"node server.js","dev":"nodemon server.js"},"keywords":[],"author":"","license":"ISC","type":"commonjs","dependencies":{"cors":"^2.8.5","express":"^4.19.2","fs-extra":"^4.19.2"}}
+{
+  "name": "media-streamer",
+  "version": "1.0.0",
+  "description": "Personal local media streaming app - Netflix/Spotify/Audible/Plex clone",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "fs-extra": "^11.2.0"
+  }
+}
